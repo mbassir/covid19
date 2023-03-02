@@ -1,0 +1,206 @@
+%%%%%%%%%%%% Optimal control with age groups %%%%%%%%%%%%%
+% This code provides simulations for each compartment with and without
+% controls (u and v) with respect to three different age groups
+%               Age group 1 : less than 25 years old
+%               Age group 2 : between 25 and 60 years old
+%               Age group 3 : more than 60 years old
+
+clc;
+clear all;
+global eta beta mu N alpha theta delta1 lamda gamma delta2
+
+eta=[2000;2000;200]; mu=[0.01;0.02;0.03]; delta1=[0.4;0.2;0.1]; delta2=[0.001;0.03;0.06];
+beta=[0.5;0.6;0.3];
+alpha=[0.3;0.4;0.6]; 
+theta=[0.5;0.2;0.2]; lamda=[0.01;0.01;0.5]; gamma=[0.4;0.1;0.1];
+A=[5*10^(+4);5*10^(+4);5*10^(+3)]; B=[10^5;10^5;10^3];
+
+S1_0=10^9; I1_0=0; E1_0=0; H1_0=0; R1_0=0;
+S2_0=2*10^9; I2_0=0; E2_0=1; H2_0=0; R2_0=0;
+S3_0=10^9; I3_0=0; E3_0=0; H3_0=0; R3_0=0;
+
+
+K=1e+6;
+
+delta=0.001;
+
+S=[S1_0;S2_0;S3_0]; E=[E1_0;E2_0;E3_0]; I=[I1_0;I2_0;I3_0]; H=[H1_0;H2_0;H3_0];
+R=[R1_0;R2_0;R3_0]; % 3x1
+
+MaxTime=100;
+test=-1;
+NN=100;
+N=S+E+I+H+R; % 3x1
+t=linspace(0,MaxTime,NN+1);
+h=MaxTime/NN;
+h2=h/2;
+
+nga= 3; % number of age groups 'j'
+
+u=zeros(nga,NN+1);
+v=zeros(nga,NN+1);
+
+
+S=zeros(nga,NN+1); E=zeros(nga,NN+1); I=zeros(nga,NN+1); H=zeros(nga,NN+1);
+R=zeros(nga,NN+1);
+S(:,1) = [S1_0;S2_0;S3_0]; E(:,1) = [E1_0;E2_0;E3_0];I(:,1) = [I1_0;I2_0;I3_0];
+H(:,1) = [H1_0;H2_0;H3_0];R(:,1) = [R1_0;R2_0;R3_0];
+
+z1=zeros(nga,NN+1); z2=zeros(nga,NN+1); z3=zeros(nga,NN+1); z4=zeros(nga,NN+1);
+z5=zeros(nga,NN+1);
+z1(1,1)=S1_0; z2(1,1)=E1_0; z3(1,1)=I1_0; z4(1,1)=H1_0; z5(1,1)=R1_0;
+z1(2,1)=S2_0; z2(2,1)=E2_0; z3(2,1)=I2_0; z4(2,1)=H2_0; z5(2,1)=R2_0;
+z1(3,1)=S3_0; z2(3,1)=E3_0; z3(3,1)=I3_0; z4(3,1)=H3_0; z5(3,1)=R3_0;
+
+sigma1=zeros(nga,NN+1); sigma2=zeros(nga,NN+1); sigma3=zeros(nga,NN+1);
+sigma4=zeros(nga,NN+1); sigma5=zeros(nga,NN+1);
+%transversality condition
+for i=1:nga
+    sigma2(i,NN+1)=1;
+    sigma3(i,NN+1)=1;
+end
+
+x(:,:,1)=S; x(:,:,2)=E; x(:,:,3)=I; x(:,:,4)=H; x(:,:,5)=R; 
+sigma(:,:,1)=sigma1; sigma(:,:,2)=sigma2; sigma(:,:,3)=sigma3;
+sigma(:,:,4)=sigma4; sigma(:,:,5)=sigma5;
+
+u1=u';
+
+%% %%%%%% Compute solutions WITHOUT CONTROL %%%%%%%%%%%%%%%%%%%%%%%%%%
+
+for i=1:NN
+    
+    k11=eta - z1(:,i) .* sum(beta .* z2(:,i) ./N) - mu .* z1(:,i) ; % for i, k11 -> [3,1]
+    k12=z1(:,i) .* sum(beta .* z2(:,i) ./N) - (mu+alpha+theta) .* z2(:,i) ;
+    k13=alpha .* z2(:,i) - (mu+lamda+delta1) .* z3(:,i) ;
+    k14=lamda .* z3(:,i) - (mu+gamma+delta2) .* z4(:,i) ;
+    k15=gamma .* z4(:,i) + theta .* z2(:,i) - mu .* z5(:,i) ;
+    
+    k21=eta - (z1(:,i)+h2*k11) .* sum(beta .* (z2(:,i)+h2*k12) ./N) - mu .* (z1(:,i)+h2*k11) ;
+    k22=(z1(:,i)+h2*k11) .* sum(beta .* (z2(:,i)+h2*k12) ./N) - (mu+alpha+theta) .* (z2(:,i)+h2*k12) ;
+    k23=alpha .* (z2(:,i)+h2*k12) - (mu+lamda+delta1) .* (z3(:,i)+h2*k13) ;
+    k24=lamda .* (z3(:,i)+h2*k13) - (mu+gamma+delta2) .* (z4(:,i)+h2*k14) ;
+    k25=gamma .* (z4(:,i)+h2*k14) + theta .* (z2(:,i)+h2*k12) - mu .* (z5(:,i)+h2*k15) ;
+    
+    k31=eta - (z1(:,i)+h2*k21) .* sum(beta .* (z2(:,i)+h2*k22) ./N) - mu .* (z1(:,i)+h2*k21) ;
+    k32=(z1(:,i)+h2*k21) .* sum(beta .* (z2(:,i)+h2*k22) ./N) - (mu+alpha+theta) .* (z2(:,i)+h2*k22) ;
+    k33=alpha .* (z2(:,i)+h2*k22) - (mu+lamda+delta1) .* (z3(:,i)+h2*k23) ;
+    k34=lamda .* (z3(:,i)+h2*k23) - (mu+gamma+delta2) .* (z4(:,i)+h2*k24) ;
+    k35=gamma .* (z4(:,i)+h2*k24) + theta .* (z2(:,i)+h2*k22) - mu .* (z5(:,i)+h2*k25) ;
+    
+    k41=eta - (z1(:,i)+h2*k31) .* sum(beta .* (z2(:,i)+h2*k32) ./N) - mu .* (z1(:,i)+h*k31) ;
+    k42=(z1(:,i)+h2*k31) .* sum(beta .* (z2(:,i)+h2*k32) ./N) - (mu+alpha+theta) .* (z2(:,i)+h*k32) ;
+    k43=alpha .* (z2(:,i)+h*k32) - (mu+lamda+delta1) .* (z3(:,i)+h*k33) ;
+    k44=lamda .* (z3(:,i)+h*k33) - (mu+gamma+delta2) .* (z4(:,i)+h*k34) ;
+    k45=gamma .* (z4(:,i)+h*k34) + theta .* (z2(:,i)+h*k32) - mu .* (z5(:,i)+h*k35) ;
+    
+    z1(:,i+1)=z1(:,i)+(h/6)*(k11+2*k21+2*k31+k41);
+    z2(:,i+1)=z2(:,i)+(h/6)*(k12+2*k22+2*k32+k42);
+    z3(:,i+1)=z3(:,i)+(h/6)*(k13+2*k23+2*k33+k43);
+    z4(:,i+1)=z4(:,i)+(h/6)*(k14+2*k24+2*k34+k44);
+    z5(:,i+1)=z5(:,i)+(h/6)*(k15+2*k25+2*k35+k45);
+    
+end
+
+%% %%%%%% Compute solutions WITH OPTIMAL CONTROL %%%%%%%%%%%%%%%%%%%%%%%%%%
+count = 1;
+
+while(count<=12)
+    
+    oldu=u;
+    oldu1=u1; oldv=v;
+    oldx=x;
+    oldsigma=sigma;
+    
+    for i=1:NN       
+        k11=eta - S(:,i) .* (1-u(:,i)) .* sum(beta .* E(:,i) ./ N) - mu .* S(:,i) ;
+        k12=S(:,i) .* (1-u(:,i)) .* sum(beta .* E(:,i) ./ N) - (mu+alpha+theta).*E(:,i) - v(:,i).*E(:,i) ;
+        k13=alpha.*E(:,i) - (mu+lamda+delta1).*I(:,i) - v(:,i).*I(:,i) ;
+        k14=lamda.*I(:,i) - (mu+gamma+delta2).*H(:,i) - v(:,i).*H(:,i);
+        k15=gamma.*H(:,i) + theta.*E(:,i) - mu.*R(:,i) + v(:,i).*(E(:,i)+I(:,i)+H(:,i)) ;
+        
+        k21=eta - (S(:,i)+h2*k11) .* (1-0.5*(u(:,i)+u(:,i+1))) .* sum(beta .* (E(:,i)+h2*k12) ./ N) - mu.*(S(:,i)+h2*k11) ;
+        k22=(S(:,i)+h2*k11) .* (1-0.5*(u(:,i)+u(:,i+1))) .* sum(beta .* (E(:,i)+h2*k12) ./ N) - (mu+alpha+theta).*(E(:,i)+h2*k12) - 0.5*(v(:,i)+v(:,i+1)).*(E(:,i)+h2*k12) ;
+        k23=alpha.*(E(:,i)+h2*k12) - (mu+lamda+delta1).*(I(:,i)+h2*k13) - 0.5*(v(:,i)+v(:,i+1)).*(I(:,i)+h2*k13) ;
+        k24=lamda.*(I(:,i)+h2*k13) - (mu+gamma+delta2).*(H(:,i)+h2*k14) - 0.5*(v(:,i)+v(:,i+1)).*(H(:,i)+h2*k14) ;
+        k25=gamma.*(H(:,i)+h2*k14) + theta.*(E(:,i)+h2*k12) - mu.*(R(:,i)+h2*k15) + 0.5*(v(:,i)+v(:,i+1)).*(E(:,i)+h2*k12+I(:,i)+h2*k13+H(:,i)+h2*k14) ;
+        
+        k31=eta - (S(:,i)+h2*k21) .* (1-0.5*(u(:,i)+u(:,i+1))) .* sum(beta .* (E(:,i)+h2*k22) ./ N) - mu.*(S(:,i)+h2*k21) ;
+        k32=(S(:,i)+h2*k21) .* (1-0.5*(u(:,i)+u(:,i+1))) .* sum(beta .* (E(:,i)+h2*k22) ./ N) - (mu+alpha+theta).*(E(:,i)+h2*k22) - 0.5*(v(:,i)+v(:,i+1)).*(E(:,i)+h2*k22) ;
+        k33=alpha.*(E(:,i)+h2*k22) - (mu+lamda+delta1).*(I(:,i)+h2*k23) - 0.5*(v(:,i)+v(:,i+1)).*(I(:,i)+h2*k23) ;
+        k34=lamda.*(I(:,i)+h2*k23) - (mu+gamma+delta2).*(H(:,i)+h2*k24) - 0.5*(v(:,i)+v(:,i+1)).*(H(:,i)+h2*k24) ;
+        k35=gamma.*(H(:,i)+h2*k24) + theta.*(E(:,i)+h2*k22) - mu.*(R(:,i)+h2*k25) + 0.5*(v(:,i)+v(:,i+1)).*(E(:,i)+h2*k22+I(:,i)+h2*k23+H(:,i)+h2*k24) ;
+        
+        k41=eta - (S(:,i)+h2*k31) .* (1-u(:,i+1)) .* sum(beta .* (E(:,i)+h2*k32) ./ N) - mu.*(S(:,i)+h2*k31) ;
+        k42=(S(:,i)+h2*k31) .* (1-u(:,i+1)) .* sum(beta .* (E(:,i)+h2*k32) ./ N) - (mu+alpha+theta).*(E(:,i)+h2*k32) - v(:,i+1).*(E(:,i)+h2*k32) ;
+        k43=alpha.*(E(:,i)+h2*k32) - (mu+lamda+delta1).*(I(:,i)+h2*k33) - v(:,i+1).*(I(:,i)+h2*k33) ;
+        k44=lamda.*(I(:,i)+h2*k33) - (mu+gamma+delta2).*(H(:,i)+h2*k34) - v(:,i+1).*(H(:,i)+h2*k34) ;
+        k45=gamma.*(H(:,i)+h2*k34) + theta.*(E(:,i)+h2*k32) - mu.*(R(:,i)+h2*k35) + v(:,i+1).*(E(:,i)+h2*k32+I(:,i)+h2*k33+H(:,i)+h2*k34) ;
+        
+        S(:,i+1)=S(:,i)+(h/6)*(k11+2*k21+2*k31+k41);
+        E(:,i+1)=E(:,i)+(h/6)*(k12+2*k22+2*k32+k42);
+        I(:,i+1)=I(:,i)+(h/6)*(k13+2*k23+2*k33+k43);
+        H(:,i+1)=H(:,i)+(h/6)*(k14+2*k24+2*k34+k44);
+        R(:,i+1)=R(:,i)+(h/6)*(k15+2*k25+2*k35+k45);
+        
+    end
+    
+    for i=1:NN
+        j=NN+2-i;
+              
+        k11=(1-u(:,j)).*sum(beta .* E(:,j) ./ N).*(sigma1(:,j)-sigma2(:,j)) + mu.*sigma1(:,j);
+        k12=-1+(beta.*(1-u(:,j)).*S(:,j) ./N).*(sigma1(:,j)-sigma2(:,j))+(mu+alpha+theta+v(:,j)).*sigma2(:,j) - alpha.*sigma3(:,j) - (theta+v(:,j)).*sigma5(:,j);
+        k13=-1+(mu+lamda+delta1+v(:,j)).*sigma3(:,j) - lamda.*sigma4(:,j) - v(:,j).*sigma5(:,j) ;
+        k14=-1+(mu+gamma+delta2+v(:,j)).*sigma4(:,j) - (gamma+v(:,j)).*sigma5(:,j);
+        k15=mu.*sigma5(:,j);
+        
+        k21=(1-0.5*(u(:,j)+u(:,j-1))).*sum(beta .* 0.5.*(E(:,j)+E(:,j-1)) ./ N).*((sigma1(:,j)-h2*k11)-(sigma2(:,j)-h2*k12)) + mu.*(sigma1(:,j)-h2*k11);
+        k22=-1+(beta.*(1-0.5*(u(:,j)+u(:,j-1))) .*0.5.*(S(:,j)+S(:,j-1)) ./N).*((sigma1(:,j)-h2*k11)-(sigma2(:,j)-h2*k12))+(mu+alpha+theta+0.5*(v(:,j)+v(:,j-1))).*(sigma2(:,j)-h2*k12) - ...
+            - alpha.*(sigma3(:,j)-h2*k13) - (theta+0.5*(v(:,j)+v(:,j-1))).*(sigma5(:,j)-h2*k15);
+        k23=-1+(mu+lamda+delta1+0.5*(v(:,j)+v(:,j-1))).*(sigma3(:,j)-h2*k13) - lamda.*(sigma4(:,j)-h2*k14) - 0.5*(v(:,j)+v(:,j-1)).*(sigma5(:,j)-h2*k15);
+        k24=-1+(mu+gamma+delta2+0.5*(v(:,j)+v(:,j-1))).*(sigma4(:,j)-h2*k14) - (gamma+0.5*(v(:,j)+v(:,j-1))).*(sigma5(:,j)-h2*k15);
+        k25=mu.*(sigma5(:,j)-h2*k15);
+        
+        k31=(1-0.5*(u(:,j)+u(:,j-1))).*sum(beta .* 0.5 .*(E(:,j)+E(:,j-1)) ./ N).*((sigma1(:,j)-h2*k21)-(sigma2(:,j)-h2*k22)) + mu.*(sigma1(:,j)-h2*k21);
+        k32=-1+(beta.*(1-0.5*(u(:,j)+u(:,j-1))) .*0.5 .* (S(:,j)+S(:,j-1)) ./N).*((sigma1(:,j)-h2*k21)-(sigma2(:,j)-h2*k22))+(mu+alpha+theta+0.5 .*(v(:,j)+v(:,j-1))).*(sigma2(:,j)-h2*k22) - ...
+            - alpha.*(sigma3(:,j)-h2*k23) - (theta+0.5*(v(:,j)+v(:,j-1))).*(sigma5(:,j)-h2*k25);
+        k33=-1+(mu+lamda+delta1+0.5*(v(:,j)+v(:,j-1))).*(sigma3(:,j)-h2*k23) - lamda.*(sigma4(:,j)-h2*k24) - 0.5*(v(:,j)+v(:,j-1)).*(sigma5(:,j)-h2*k25);
+        k34=-1+(mu+gamma+delta2+0.5*(v(:,j)+v(:,j-1))).*(sigma4(:,j)-h2*k24) - (gamma+0.5*(v(:,j)+v(:,j-1))).*(sigma5(:,j)-h2*k25);
+        k35=mu.*(sigma5(:,j)-h2*k25);
+        
+        k41=(1-u(:,j-1)).*sum(beta .* E(:,j-1) ./ N).*((sigma1(:,j)-h2*k31)-(sigma2(:,j)-h2*k32)) + mu.*(sigma1(:,j)-h2*k31);
+        k42=-1+(beta.*(1-u(:,j-1)).*S(:,j-1) ./N).*((sigma1(:,j)-h2*k31)-(sigma2(:,j)-h2*k32))+(mu+alpha+theta+v(:,j-1)).*(sigma2(:,j)-h2*k32) - ...
+            - alpha.*(sigma3(:,j)-h2*k33) - (theta+v(:,j-1)).*(sigma5(:,j)-h2*k35);
+        k43=-1+(mu+lamda+delta1+v(:,j-1)).*(sigma3(:,j)-h2*k33) - lamda.*(sigma4(:,j)-h2*k34) - v(:,j-1).*(sigma5(:,j)-h2*k35);
+        k44=-1+(mu+gamma+delta2+v(:,j-1)).*(sigma4(:,j)-h2*k34) - (gamma+v(:,j-1)).*(sigma5(:,j)-h2*k35);
+        k45=mu.*(sigma5(:,j)-h2*k35);
+        
+        sigma1(:,j-1)=sigma1(:,j)-(h/6)*(k11+2*k21+2*k31+k41);
+        sigma2(:,j-1)=sigma2(:,j)-(h/6)*(k12+2*k22+2*k32+k42);
+        sigma3(:,j-1)=sigma3(:,j)-(h/6)*(k13+2*k23+2*k33+k43);
+        sigma4(:,j-1)=sigma4(:,j)-(h/6)*(k14+2*k24+2*k34+k44);
+        sigma5(:,j-1)=sigma5(:,j)-(h/6)*(k15+2*k25+2*k35+k45);
+        
+    end
+    
+    temp1=((sigma2-sigma1).*beta.*S.*E) ./ (A.*N);
+    temp2=((sigma2-sigma5) .* E + (sigma3-sigma5) .* I + (sigma4-sigma5) .* H) ./ B;
+    
+    u11=min(1,max(0,temp1)); v1=min(1,max(0,temp2));
+    u=0.5*(u11 + oldu); v=0.5*(v1 + oldv);
+    
+    x=[S E I H R]';
+    sigma=[sigma1 sigma2 sigma3 sigma4 sigma5]';
+    
+    test=delta*sum(abs(u))-sum(abs(oldu-u));
+    fprintf('counting iterations %f \n',count);
+    count = count +1;
+end
+
+y(1,:)=t;
+figure;
+
+%% Plot the evolution of compartments S,E,I,H,R and controls u,v
+plot_group_age(y,z1,z2,z3,z4,z5,S,E,I,H,R,u11,v1);
+
+
