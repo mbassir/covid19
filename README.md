@@ -18,7 +18,12 @@ The code of this section provides simulations for each compartment (S, E, I, H, 
 
 To run this code, go the folder "optimal-control-simple", and run the script "main_optimal_control.m".  
 
-<h3>B. Optimal control with age groups </h3>
+<h3>B. Optimal control with delay</h3>
+1. In order to compute optimal control with delay for delay states T=0, T=10 and T=25, go to the folder "optimal-control-delay", and run the script "main_delay.m". After running it, all SEIHR variables and controls u, v, w and z for the three delay states will be saved in a mat file named "covid_retard_SEIHR_and_controls.mat".
+
+2. In order to plot the evolution of each compartment/control for all delay states, run the script "plot_delay.m".
+
+<h3>C. Optimal control with age groups</h3>
 In this section, the provided code runs simulations for each compartment (S,E,I,H,R) with and without controls (u and v) with respect to three different age groups:
  
 1. Age group 1 : less than 25 years old
@@ -30,8 +35,3 @@ In this section, the provided code runs simulations for each compartment (S,E,I,
 , then plots the evolution of each compartment/control for each and every age group (mentioned above).
 
 For this, go to the folder "optimal-control-agegroups", and run the script "main_agegroups.m".  
-
-<h3>C. Optimal control with delay</h3>
-1. In order to compute optimal control with delay for delay states T=0, T=10 and T=25, go to the folder "optimal-control-delay", and run the script "main_delay.m". After running it, all SEIHR variables and controls u, v, w and z for the three delay states will be saved in a mat file named "covid_retard_SEIHR_and_controls.mat".
-
-2. In order to plot the evolution of each compartment/control for all delay states, run the script "plot_delay.m".
